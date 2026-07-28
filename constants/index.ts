@@ -200,12 +200,6 @@ export const OCCUPATIONS = [
   { value: 'other', label: 'Other' },
 ] as const;
 
-export const DIGITAL_HABITS = [
-  { value: 'low', label: 'Low — Basic smartphone use, limited apps' },
-  { value: 'moderate', label: 'Moderate — Regular use of apps, payments, social media' },
-  { value: 'high', label: 'High — Advanced use, multiple devices, online banking' },
-] as const;
-
 export const SCAM_EXPERIENCES = [
   { value: 'none', label: 'No, I have never been targeted' },
   { value: 'attempted', label: 'Yes, someone tried to scam me but I avoided it' },
@@ -288,22 +282,6 @@ export const DECISION_STYLE_QUESTIONS = [
 ];
 
 // ── Onboarding Step Configuration ────────────────────────────────────────────
-
-export const ONBOARDING_STEPS = [
-  { id: 'welcome', label: 'Welcome' },
-  { id: 'language', label: 'Language' },
-  { id: 'age', label: 'Age' },
-  { id: 'occupation', label: 'Occupation' },
-  { id: 'services', label: 'Digital Life' },
-  { id: 'confidence', label: 'Confidence' },
-  { id: 'exposure', label: 'Exposure' },
-  { id: 'decision-1', label: 'Decision Style' },
-  { id: 'decision-2', label: 'Decision Style' },
-  { id: 'decision-3', label: 'Decision Style' },
-  { id: 'consent', label: 'Consent' },
-] as const;
-
-export type OnboardingStepId = (typeof ONBOARDING_STEPS)[number]['id'];
 
 // ── Chart Colors ───────────────────────────────────────────────────────────
 

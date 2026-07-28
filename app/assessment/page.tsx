@@ -13,6 +13,7 @@ import { SIAAssistant } from '@/components/sia/sia-assistant';
 import { LeaveConfirmationDialog } from '@/components/sia/leave-confirmation-dialog';
 import { useAssessmentState } from '@/hooks/use-assessment';
 import { useSIAOrchestrator } from '@/hooks/use-sia-orchestrator';
+import { useSIAStore } from '@/hooks/use-sia-store';
 import {
   createParticipant,
   getActiveScenarios,
@@ -105,6 +106,32 @@ export default function AssessmentPage() {
     setPhase('profile');
     setTimeout(() => sia.guideToProfile(), 2000);
   };
+
+  const handleProfileStepChange = useCallback(
+    (step: string, stepIndex: number, totalSteps: number) => {
+      const pct = Math.round((stepIndex / (totalSteps - 1)) * 100);
+      sia.context.completionPercentage = pct;
+      const messages: Record<string, string> = {
+        welcome: "Welcome! I'm SIA, your Digital Safety Companion.",
+        language: 'Select your preferred language for the assessment.',
+        age: 'What is your age group? This helps us select relevant scenarios.',
+        occupation: 'What best describes your occupation?',
+        services: 'Which digital services do you use in your daily life?',
+        confidence: 'How confident do you feel using digital services?',
+        exposure: 'How often do you encounter scam attempts?',
+        'scam-experience': 'Have you or someone close to you ever been targeted by a scam?',
+        'decision-1': 'Now, a few questions about how you make decisions under pressure.',
+        'decision-2': 'How do you respond when someone claims authority?',
+        'decision-3': 'What is your first instinct when you receive an unexpected message?',
+        consent: 'Finally, please review and provide your consent to participate.',
+      };
+      const text = messages[step];
+      if (text) {
+        useSIAStore.getState().addMessage(text, 'PROFILE_GUIDANCE');
+      }
+    },
+    [sia]
+  );
 
   const handleProfileSubmit = async (data: ParticipantInput) => {
     setLoading(true);
@@ -281,7 +308,7 @@ export default function AssessmentPage() {
               {error}
             </div>
           )}
-          <ProfileForm onSubmit={handleProfileSubmit} loading={loading} />
+          <ProfileForm onSubmit={handleProfileSubmit} loading={loading} onStepChange={handleProfileStepChange} />
         </div>
         <SIAAssistant />
       </div>

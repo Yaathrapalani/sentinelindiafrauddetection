@@ -27,12 +27,14 @@ import {
   DIGITAL_SERVICES,
   DIGITAL_CONFIDENCE_LEVELS,
   EXPOSURE_FREQUENCIES,
+  SCAM_EXPERIENCES,
   DECISION_STYLE_QUESTIONS,
 } from '@/constants';
 
 interface ProfileFormProps {
   onSubmit: (data: ParticipantInput) => void;
   loading?: boolean;
+  onStepChange?: (step: StepId, stepIndex: number, totalSteps: number) => void;
 }
 
 type StepId =
@@ -43,6 +45,7 @@ type StepId =
   | 'services'
   | 'confidence'
   | 'exposure'
+  | 'scam-experience'
   | 'decision-1'
   | 'decision-2'
   | 'decision-3'
@@ -56,6 +59,7 @@ const STEP_ORDER: StepId[] = [
   'services',
   'confidence',
   'exposure',
+  'scam-experience',
   'decision-1',
   'decision-2',
   'decision-3',
@@ -88,6 +92,21 @@ const INITIAL_DATA: ProfileData = {
   consentGiven: false,
 };
 
+function deriveDigitalHabit(
+  services: string[],
+  confidence: string
+): DigitalHabitLevel {
+  const serviceCount = services.filter((s) => s !== 'none').length;
+  const confMap: Record<string, number> = {
+    'very-low': 0, low: 1, moderate: 2, high: 3, 'very-high': 4,
+  '': 2,
+  };
+  const score = serviceCount + (confMap[confidence] ?? 2);
+  if (score <= 2) return 'low';
+  if (score >= 6) return 'high';
+  return 'moderate';
+}
+
 const STEP_RATIONALES: Partial<Record<StepId, string>> = {
   age: 'Age helps us select scenarios relevant to your life stage and common fraud patterns.',
   occupation: 'Occupation helps us tailor scenarios to your professional context.',
@@ -97,9 +116,10 @@ const STEP_RATIONALES: Partial<Record<StepId, string>> = {
   'decision-1': 'Helps us understand your natural response to urgency tactics — a common scam technique.',
   'decision-2': 'Helps us understand how authority claims affect your decision-making.',
   'decision-3': 'Helps us understand your baseline trust for unexpected digital communications.',
+  'scam-experience': 'Previous experience helps us calibrate scenario difficulty and assess recovery readiness.',
 };
 
-export function ProfileForm({ onSubmit, loading = false }: ProfileFormProps) {
+export function ProfileForm({ onSubmit, loading = false, onStepChange }: ProfileFormProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [data, setData] = useState<ProfileData>(INITIAL_DATA);
   const [direction, setDirection] = useState(1);
@@ -128,6 +148,8 @@ export function ProfileForm({ onSubmit, loading = false }: ProfileFormProps) {
         return !!data.digitalConfidence;
       case 'exposure':
         return !!data.exposureFrequency;
+      case 'scam-experience':
+        return !!data.scamExperience;
       case 'decision-1':
         return !!data.decisionStyle.urgency_response;
       case 'decision-2':
@@ -147,8 +169,8 @@ export function ProfileForm({ onSubmit, loading = false }: ProfileFormProps) {
       onSubmit({
         ageBracket: data.ageBracket as ParticipantInput['ageBracket'],
         occupation: data.occupation as ParticipantInput['occupation'],
-        digitalHabitLevel: (data.digitalHabitLevel || 'moderate') as ParticipantInput['digitalHabitLevel'],
-        scamExperience: (data.scamExperience || 'none') as ParticipantInput['scamExperience'],
+        digitalHabitLevel: deriveDigitalHabit(data.digitalServices, data.digitalConfidence) as ParticipantInput['digitalHabitLevel'],
+        scamExperience: data.scamExperience as ParticipantInput['scamExperience'],
         digitalServices: data.digitalServices,
         digitalConfidence: data.digitalConfidence || null,
         exposureFrequency: data.exposureFrequency || null,
@@ -166,6 +188,11 @@ export function ProfileForm({ onSubmit, loading = false }: ProfileFormProps) {
     setDirection(-1);
     setStepIndex((prev) => Math.max(prev - 1, 0));
   }, []);
+
+  // Notify parent of step changes for SIA narration
+  useEffect(() => {
+    onStepChange?.(currentStep, stepIndex, totalSteps);
+  }, [currentStep, stepIndex, totalSteps, onStepChange]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -301,6 +328,19 @@ export function ProfileForm({ onSubmit, loading = false }: ProfileFormProps) {
                   }))}
                   value={data.exposureFrequency}
                   onChange={(v) => update('exposureFrequency', v as ExposureFrequency)}
+                />
+              )}
+
+              {currentStep === 'scam-experience' && (
+                <ChoiceStep
+                  title="Have you or someone close to you ever been targeted by a scam?"
+                  rationale={STEP_RATIONALES['scam-experience']!}
+                  options={SCAM_EXPERIENCES.map((s) => ({
+                    value: s.value,
+                    label: s.label,
+                  }))}
+                  value={data.scamExperience}
+                  onChange={(v) => update('scamExperience', v as ScamExperience)}
                 />
               )}
 

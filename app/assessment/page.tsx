@@ -130,6 +130,10 @@ export default function AssessmentPage() {
         occupation: data.occupation,
         digitalHabitLevel: data.digitalHabitLevel,
         scamExperience: data.scamExperience,
+        digitalServices: data.digitalServices,
+        digitalConfidence: data.digitalConfidence,
+        exposureFrequency: data.exposureFrequency,
+        decisionStyle: data.decisionStyle,
       });
 
       const { data: assessment, error: assessmentError } = await createAssessment(

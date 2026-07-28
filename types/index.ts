@@ -31,6 +31,42 @@ export type DigitalHabitLevel = 'low' | 'moderate' | 'high';
 
 export type ScamExperience = 'none' | 'attempted' | 'victim' | 'witnessed';
 
+export type DigitalService =
+  | 'upi'
+  | 'online-banking'
+  | 'shopping'
+  | 'social-media'
+  | 'messaging'
+  | 'email'
+  | 'govt-portals'
+  | 'investments'
+  | 'gaming'
+  | 'streaming'
+  | 'none';
+
+export type DigitalConfidence =
+  | 'very-low'
+  | 'low'
+  | 'moderate'
+  | 'high'
+  | 'very-high';
+
+export type ExposureFrequency =
+  | 'never'
+  | 'rarely'
+  | 'monthly'
+  | 'weekly'
+  | 'daily';
+
+export type DecisionStyleKey =
+  | 'urgency_response'
+  | 'authority_response'
+  | 'unexpected_response';
+
+export type DecisionStyleValue = 'act-fast' | 'verify-first' | 'ask-someone' | 'ignore';
+
+export type DecisionStyle = Record<DecisionStyleKey, DecisionStyleValue>;
+
 export interface ParticipantProfile {
   id: string;
   anonymousId: string;
@@ -38,6 +74,10 @@ export interface ParticipantProfile {
   occupation: Occupation;
   digitalHabitLevel: DigitalHabitLevel;
   scamExperience: ScamExperience;
+  digitalServices: DigitalService[];
+  digitalConfidence: DigitalConfidence | null;
+  exposureFrequency: ExposureFrequency | null;
+  decisionStyle: Partial<DecisionStyle>;
   locale: Locale;
   consentGiven: boolean;
   createdAt: string;

@@ -15,7 +15,7 @@ const nextConfig = {
     ],
   },
   experimental: {
-    optimizePackageImports: ['lucide-react', 'framer-motion', 'recharts'],
+    optimizePackageImports: ['framer-motion', 'recharts'],
   },
   async headers() {
     return [

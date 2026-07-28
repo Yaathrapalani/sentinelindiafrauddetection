@@ -19,9 +19,10 @@ import { useState } from 'react';
 
 interface ProfileFormProps {
   onSubmit: (data: ParticipantInput) => void;
+  loading?: boolean;
 }
 
-export function ProfileForm({ onSubmit }: ProfileFormProps) {
+export function ProfileForm({ onSubmit, loading = false }: ProfileFormProps) {
   const [consent, setConsent] = useState(false);
   const [ageBracket, setAgeBracket] = useState('');
   const [occupation, setOccupation] = useState('');
@@ -163,7 +164,7 @@ export function ProfileForm({ onSubmit }: ProfileFormProps) {
             )}
           </div>
 
-          <Button type="submit" size="lg" className="w-full">
+          <Button type="submit" size="lg" className="w-full" disabled={loading}>
             Continue to Assessment
           </Button>
         </form>

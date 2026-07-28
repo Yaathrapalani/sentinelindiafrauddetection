@@ -1,0 +1,157 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ── Surface / Background ── */
+    --background: 210 40% 99%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* ── Primary: Deep Trust Navy ── */
+    --primary: 222 47% 18%;
+    --primary-foreground: 210 40% 98%;
+
+    /* ── Secondary: Muted Slate ── */
+    --secondary: 215 25% 95%;
+    --secondary-foreground: 222 47% 18%;
+
+    /* ── Muted ── */
+    --muted: 215 25% 95%;
+    --muted-foreground: 215 16% 47%;
+
+    /* ── Accent: Trust Teal ── */
+    --accent: 173 58% 39%;
+    --accent-foreground: 210 40% 98%;
+
+    /* ── Semantic: Success / Warning / Error ── */
+    --success: 142 71% 38%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 38 50% 12%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* ── Borders & Inputs ── */
+    --border: 214 20% 90%;
+    --input: 214 20% 88%;
+    --ring: 222 47% 18%;
+
+    /* ── Chart Palette (8 metrics + overall) ── */
+    --chart-1: 222 47% 30%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 0 72% 51%;
+    --chart-5: 142 71% 38%;
+    --chart-6: 280 60% 55%;
+    --chart-7: 190 80% 42%;
+    --chart-8: 340 75% 55%;
+    --chart-9: 30 80% 55%;
+
+    /* ── Radius ── */
+    --radius: 0.625rem;
+
+    /* ── Elevation (shadows) ── */
+    --shadow-xs: 0 1px 2px 0 hsl(222 47% 11% / 0.05);
+    --shadow-sm: 0 1px 3px 0 hsl(222 47% 11% / 0.08), 0 1px 2px -1px hsl(222 47% 11% / 0.08);
+    --shadow-md: 0 4px 6px -1px hsl(222 47% 11% / 0.08), 0 2px 4px -2px hsl(222 47% 11% / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(222 47% 11% / 0.08), 0 4px 6px -4px hsl(222 47% 11% / 0.05);
+    --shadow-xl: 0 20px 25px -5px hsl(222 47% 11% / 0.10), 0 8px 10px -6px hsl(222 47% 11% / 0.05);
+  }
+
+  .dark {
+    --background: 222 47% 8%;
+    --foreground: 210 40% 96%;
+
+    --card: 222 40% 11%;
+    --card-foreground: 210 40% 96%;
+
+    --popover: 222 40% 11%;
+    --popover-foreground: 210 40% 96%;
+
+    --primary: 210 40% 96%;
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 96%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 173 58% 45%;
+    --accent-foreground: 222 47% 8%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 38 50% 8%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 217 33% 20%;
+    --input: 217 33% 22%;
+    --ring: 210 40% 70%;
+
+    --chart-1: 222 47% 60%;
+    --chart-2: 173 58% 50%;
+    --chart-3: 38 92% 55%;
+    --chart-4: 0 72% 60%;
+    --chart-5: 142 71% 50%;
+    --chart-6: 280 60% 65%;
+    --chart-7: 190 80% 52%;
+    --chart-8: 340 75% 60%;
+    --chart-9: 30 80% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Focus visible — WCAG 2.2 AA */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Skip link */
+  .skip-link {
+    @apply sr-only;
+  }
+  .skip-link:focus {
+    @apply not-sr-only absolute left-4 top-4 z-50 rounded-md bg-primary px-4 py-2 text-primary-foreground;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+}

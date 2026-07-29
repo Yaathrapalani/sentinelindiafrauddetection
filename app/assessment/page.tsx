@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, ArrowRight, AlertCircle } from 'lucide-react';
@@ -9,7 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ProfileForm } from '@/components/assessment/profile-form';
 import { ScenarioCard } from '@/components/assessment/scenario-card';
 import { AssessmentProgress } from '@/components/assessment/assessment-progress';
+import { SIAAssistant } from '@/components/sia/sia-assistant';
+import { LeaveConfirmationDialog } from '@/components/sia/leave-confirmation-dialog';
 import { useAssessmentState } from '@/hooks/use-assessment';
+import { useSIAOrchestrator } from '@/hooks/use-sia-orchestrator';
+import { useSIAStore } from '@/hooks/use-sia-store';
 import {
   createParticipant,
   getActiveScenarios,
@@ -42,14 +46,92 @@ export default function AssessmentPage() {
     setConfidence,
     markVoiceUsed,
     submitResponse: handleSubmitResponse,
-    startScenario,
   } = useAssessmentState();
 
+  const sia = useSIAOrchestrator({
+    totalScenarios: scenarios.length || 12,
+    ageBracket: participant?.ageBracket,
+  });
+
+
+
+  // SIA scenario intro when scenario changes
+  useEffect(() => {
+    if (phase === 'assessment' && scenarios[currentScenarioIndex]) {
+      const scenario = scenarios[currentScenarioIndex];
+      sia.introduceScenario(currentScenarioIndex, scenario.category);
+      const timer = setTimeout(() => sia.startObserving(), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [phase, currentScenarioIndex, scenarios, sia]);
+
+  // SIA progress updates
   useEffect(() => {
     if (phase === 'assessment') {
-      startScenario();
+      sia.updateProgress(currentScenarioIndex);
     }
-  }, [phase, startScenario, currentScenarioIndex]);
+  }, [currentScenarioIndex, phase, sia]);
+
+  // Leave page handler
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (phase === 'assessment' && sia.context.completionPercentage > 0) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [phase, sia.context.completionPercentage]);
+
+  // Route change interception
+  const routerPushRef = useRef(router.push);
+  useEffect(() => {
+    const originalPush = router.push.bind(router);
+    routerPushRef.current = ((href: string, options?: Record<string, unknown>) => {
+      if (phase === 'assessment' && sia.handleLeaveAttempt()) {
+        return;
+      }
+      return originalPush(href, options as Parameters<typeof originalPush>[1]);
+    }) as typeof router.push;
+    return () => {
+      routerPushRef.current = originalPush;
+    };
+  }, [phase, sia, router]);
+
+  const handleBegin = () => {
+    if (!sia.voice.hasInteracted) {
+      sia.startSIA();
+    }
+    setPhase('profile');
+    setTimeout(() => sia.guideToProfile(), 2000);
+  };
+
+  const handleProfileStepChange = useCallback(
+    (step: string, stepIndex: number, totalSteps: number) => {
+      const pct = Math.round((stepIndex / (totalSteps - 1)) * 100);
+      sia.context.completionPercentage = pct;
+      const messages: Record<string, string> = {
+        welcome: "Welcome! I'm SIA, your Digital Safety Companion.",
+        language: 'Select your preferred language for the assessment.',
+        age: 'What is your age group? This helps us select relevant scenarios.',
+        occupation: 'What best describes your occupation?',
+        services: 'Which digital services do you use in your daily life?',
+        confidence: 'How confident do you feel using digital services?',
+        exposure: 'How often do you encounter scam attempts?',
+        'scam-experience': 'Have you or someone close to you ever been targeted by a scam?',
+        'decision-1': 'Now, a few questions about how you make decisions under pressure.',
+        'decision-2': 'How do you respond when someone claims authority?',
+        'decision-3': 'What is your first instinct when you receive an unexpected message?',
+        consent: 'Finally, please review and provide your consent to participate.',
+      };
+      const text = messages[step];
+      if (text) {
+        useSIAStore.getState().addMessage(text, 'PROFILE_GUIDANCE');
+      }
+    },
+    [sia]
+  );
 
   const handleProfileSubmit = async (data: ParticipantInput) => {
     setLoading(true);
@@ -75,6 +157,10 @@ export default function AssessmentPage() {
         occupation: data.occupation,
         digitalHabitLevel: data.digitalHabitLevel,
         scamExperience: data.scamExperience,
+        digitalServices: data.digitalServices,
+        digitalConfidence: data.digitalConfidence,
+        exposureFrequency: data.exposureFrequency,
+        decisionStyle: data.decisionStyle,
       });
 
       const { data: assessment, error: assessmentError } = await createAssessment(
@@ -103,6 +189,9 @@ export default function AssessmentPage() {
 
     const option = scenario.options.find((o) => o.id === selectedOptionId);
     if (!option) return;
+
+    // SIA acknowledges the answer
+    sia.acknowledgeAnswer();
 
     const response = handleSubmitResponse(
       scenario,
@@ -141,7 +230,7 @@ export default function AssessmentPage() {
 
       router.push(`${ROUTES.RESULTS}?assessment=${assessmentId}&participant=${participant.id}`);
     }
-  }, [selectedOptionId, assessmentId, participant, scenarios, currentScenarioIndex, responses, handleSubmitResponse, router]);
+  }, [selectedOptionId, assessmentId, participant, scenarios, currentScenarioIndex, responses, handleSubmitResponse, router, sia]);
 
   if (phase === 'intro') {
     return (
@@ -154,7 +243,7 @@ export default function AssessmentPage() {
               </div>
               <CardTitle className="text-3xl">Digital Safety Assessment</CardTitle>
               <CardDescription className="text-lg">
-                This assessment takes approximately 10 minutes. Your responses are
+                This assessment takes approximately 5 minutes. Your responses are
                 anonymous and used only for research.
               </CardDescription>
             </CardHeader>
@@ -196,7 +285,7 @@ export default function AssessmentPage() {
               <Button
                 size="lg"
                 className="w-full"
-                onClick={() => setPhase('profile')}
+                onClick={handleBegin}
               >
                 Begin Assessment
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -204,6 +293,7 @@ export default function AssessmentPage() {
             </CardContent>
           </Card>
         </div>
+        <SIAAssistant />
       </div>
     );
   }
@@ -218,8 +308,9 @@ export default function AssessmentPage() {
               {error}
             </div>
           )}
-          <ProfileForm onSubmit={handleProfileSubmit} />
+          <ProfileForm onSubmit={handleProfileSubmit} loading={loading} onStepChange={handleProfileStepChange} />
         </div>
+        <SIAAssistant />
       </div>
     );
   }
@@ -231,6 +322,7 @@ export default function AssessmentPage() {
           <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-secondary border-t-accent" />
           <p className="text-sm text-muted-foreground">Calculating your Digital Safety Profile...</p>
         </div>
+        <SIAAssistant />
       </div>
     );
   }
@@ -240,6 +332,7 @@ export default function AssessmentPage() {
     return (
       <div className="container mx-auto px-4 py-16">
         <p className="text-center text-muted-foreground">No scenarios available.</p>
+        <SIAAssistant />
       </div>
     );
   }
@@ -276,6 +369,11 @@ export default function AssessmentPage() {
           </motion.div>
         </AnimatePresence>
       </div>
+      <SIAAssistant />
+      <LeaveConfirmationDialog
+        onContinue={sia.continueAssessment}
+        onLeave={sia.leaveAnyway}
+      />
     </div>
   );
 }

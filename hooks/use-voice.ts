@@ -59,24 +59,8 @@ export function useVoice(options: UseVoiceOptions = {}): UseVoiceReturn {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = LOCALE_TO_LANG[locale] || 'en-IN';
       utterance.rate = 0.95;
-      utterance.pitch = 1.1;
+      utterance.pitch = 1;
       utterance.volume = 1;
-
-      const voices = window.speechSynthesis.getVoices();
-      const targetLang = LOCALE_TO_LANG[locale] || 'en-IN';
-      const femaleVoice = voices.find(
-        (v) =>
-          v.lang === targetLang &&
-          /female|woman|samantha|google uk english female|zira|sonia|priya|kalpana/i.test(v.name)
-      ) || voices.find(
-        (v) =>
-          v.lang === targetLang &&
-          !/male|man|david|george|ravi|alex/i.test(v.name)
-      ) || voices.find((v) => v.lang === targetLang);
-
-      if (femaleVoice) {
-        utterance.voice = femaleVoice;
-      }
 
       utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => setIsSpeaking(false);

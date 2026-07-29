@@ -32,7 +32,7 @@ const STATE_LABELS: Record<string, string> = {
 };
 
 export function SIAAssistant({ locale = 'en' }: SIAAssistantProps) {
-  const { state, messages, lastSpokenId, context, showLeaveDialog } = useSIAStore();
+  const { state, messages, context } = useSIAStore();
   const voice = useSIAVoice(locale);
   const reducedMotion = useReducedMotion();
   const [expanded, setExpanded] = useState(false);

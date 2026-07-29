@@ -23,7 +23,6 @@ export default function ResultsPage() {
   const params = useSearchParams();
   const router = useRouter();
   const participantId = params.get('participant');
-  const assessmentId = params.get('assessment');
   const [score, setScore] = useState<BehaviorScore | null>(null);
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +49,7 @@ export default function ResultsPage() {
       }
       return () => timers.forEach(clearTimeout);
     }
-  }, [loading, score]);
+  }, [loading, score, sia]);
 
   useEffect(() => {
     if (!participantId) {

@@ -17,6 +17,11 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['framer-motion', 'recharts'],
   },
+  webpack: (config) => {
+    config.module = config.module || {};
+    config.module.exprContextCritical = false;
+    return config;
+  },
   async headers() {
     return [
       {

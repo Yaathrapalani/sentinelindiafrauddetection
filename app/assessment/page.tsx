@@ -63,14 +63,14 @@ export default function AssessmentPage() {
       const timer = setTimeout(() => sia.startObserving(), 4000);
       return () => clearTimeout(timer);
     }
-  }, [phase, currentScenarioIndex, scenarios]);
+  }, [phase, currentScenarioIndex, scenarios, sia]);
 
   // SIA progress updates
   useEffect(() => {
     if (phase === 'assessment') {
       sia.updateProgress(currentScenarioIndex);
     }
-  }, [currentScenarioIndex, phase]);
+  }, [currentScenarioIndex, phase, sia]);
 
   // Leave page handler
   useEffect(() => {

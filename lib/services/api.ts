@@ -13,6 +13,7 @@ import type {
   Scenario,
   AnalyticsSummary,
   Persona,
+  MetricKey,
 } from '@/types';
 import type { ParticipantInput, ResponseInput, FeedbackInput } from '@/lib/validation/schemas';
 import { computeBehaviorScore } from '@/lib/scoring/engine';
@@ -337,19 +338,23 @@ export async function getAnalyticsSummary(): Promise<{
   data: AnalyticsSummary | null;
   error: string | null;
 }> {
-  const [participantsRes, scoresRes, assessmentsRes] = await Promise.all([
+  const [participantsRes, scoresRes, assessmentsRes, responsesRes] = await Promise.all([
     supabase.from('participants').select('age_bracket, occupation, digital_habit_level, completed_at'),
     supabase.from('behavior_scores').select('scores, risk_level, overall_score'),
     supabase.from('assessments').select('status, started_at'),
+    supabase
+      .from('responses')
+      .select('response_type, scenario_id, scenarios!inner(category)'),
   ]);
 
-  if (participantsRes.error || scoresRes.error || assessmentsRes.error) {
+  if (participantsRes.error || scoresRes.error || assessmentsRes.error || responsesRes.error) {
     return {
       data: null,
       error:
         participantsRes.error?.message ||
         scoresRes.error?.message ||
         assessmentsRes.error?.message ||
+        responsesRes.error?.message ||
         'Unknown error',
     };
   }
@@ -357,6 +362,7 @@ export async function getAnalyticsSummary(): Promise<{
   const participants = participantsRes.data || [];
   const scores = scoresRes.data || [];
   const assessments = assessmentsRes.data || [];
+  const responses = responsesRes.data || [];
 
   const completedAssessments = assessments.filter(
     (a) => a.status === 'complete'
@@ -402,6 +408,33 @@ export async function getAnalyticsSummary(): Promise<{
       (demographicBreakdown.digitalHabitLevel[p.digital_habit_level] || 0) + 1;
   }
 
+  // Top vulnerabilities: metrics with lowest average scores (most vulnerable)
+  const topVulnerabilities = (Object.entries(metricAverages) as [MetricKey, number][])
+    .map(([metric, averageScore]) => ({ metric, averageScore }))
+    .sort((a, b) => a.averageScore - b.averageScore)
+    .slice(0, 5);
+
+  // Category performance: average safety score per scenario category
+  // safe=100, cautious=75, risky=25, critical=0
+  const responseScores: Record<string, number> = {
+    safe: 100,
+    cautious: 75,
+    risky: 25,
+    critical: 0,
+  };
+  const categorySums: Record<string, number> = {};
+  const categoryCounts: Record<string, number> = {};
+  for (const r of responses) {
+    const cat = (r.scenarios as unknown as { category: string })?.category;
+    if (!cat) continue;
+    categorySums[cat] = (categorySums[cat] || 0) + (responseScores[r.response_type] ?? 50);
+    categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+  }
+  const categoryPerformance: Record<string, number> = {} as Record<string, number>;
+  for (const cat of Object.keys(categorySums)) {
+    categoryPerformance[cat] = Math.round(categorySums[cat] / categoryCounts[cat]);
+  }
+
   return {
     data: {
       totalParticipants: participants.length,
@@ -409,9 +442,9 @@ export async function getAnalyticsSummary(): Promise<{
       averageOverallScore: avgScore,
       riskDistribution,
       metricAverages,
-      topVulnerabilities: [],
+      topVulnerabilities,
       demographicBreakdown,
-      categoryPerformance: {} as Record<string, number>,
+      categoryPerformance,
       lastUpdated: new Date().toISOString(),
     },
     error: null,

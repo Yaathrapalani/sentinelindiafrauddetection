@@ -18,51 +18,6 @@ export const scamExperienceSchema = z.enum([
   'witnessed',
 ]);
 
-export const digitalServiceSchema = z.enum([
-  'upi',
-  'online-banking',
-  'shopping',
-  'social-media',
-  'messaging',
-  'email',
-  'govt-portals',
-  'investments',
-  'gaming',
-  'streaming',
-  'none',
-]);
-
-export const digitalConfidenceSchema = z.enum([
-  'very-low',
-  'low',
-  'moderate',
-  'high',
-  'very-high',
-]);
-
-export const exposureFrequencySchema = z.enum([
-  'never',
-  'rarely',
-  'monthly',
-  'weekly',
-  'daily',
-]);
-
-export const decisionStyleValueSchema = z.enum([
-  'act-fast',
-  'verify-first',
-  'ask-someone',
-  'ignore',
-]);
-
-export const decisionStyleSchema = z
-  .object({
-    urgency_response: decisionStyleValueSchema,
-    authority_response: decisionStyleValueSchema,
-    unexpected_response: decisionStyleValueSchema,
-  })
-  .partial();
-
 export const localeSchema = z.enum(['en', 'hi', 'ta', 'kn', 'te']);
 
 export const participantSchema = z.object({
@@ -70,10 +25,6 @@ export const participantSchema = z.object({
   occupation: occupationSchema,
   digitalHabitLevel: digitalHabitSchema,
   scamExperience: scamExperienceSchema,
-  digitalServices: z.array(digitalServiceSchema).default([]),
-  digitalConfidence: digitalConfidenceSchema.nullable().default(null),
-  exposureFrequency: exposureFrequencySchema.nullable().default(null),
-  decisionStyle: decisionStyleSchema.default({}),
   locale: localeSchema.default('en'),
   consentGiven: z.boolean().refine((v) => v === true, {
     message: 'You must provide consent to participate',

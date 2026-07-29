@@ -15,12 +15,7 @@ const nextConfig = {
     ],
   },
   experimental: {
-    optimizePackageImports: ['framer-motion', 'recharts'],
-  },
-  webpack: (config) => {
-    config.module = config.module || {};
-    config.module.exprContextCritical = false;
-    return config;
+    optimizePackageImports: ['lucide-react', 'framer-motion', 'recharts'],
   },
   async headers() {
     return [

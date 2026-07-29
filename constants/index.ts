@@ -165,6 +165,7 @@ export const ROUTES = {
   RESULTS: '/assessment/results',
   DASHBOARD: '/dashboard',
   ADMIN: '/admin',
+  PROFILE: '/profile',
   PRIVACY: '/privacy',
   ACCESSIBILITY: '/accessibility',
 } as const;
@@ -199,88 +200,18 @@ export const OCCUPATIONS = [
   { value: 'other', label: 'Other' },
 ] as const;
 
+export const DIGITAL_HABITS = [
+  { value: 'low', label: 'Low — Basic smartphone use, limited apps' },
+  { value: 'moderate', label: 'Moderate — Regular use of apps, payments, social media' },
+  { value: 'high', label: 'High — Advanced use, multiple devices, online banking' },
+] as const;
+
 export const SCAM_EXPERIENCES = [
   { value: 'none', label: 'No, I have never been targeted' },
   { value: 'attempted', label: 'Yes, someone tried to scam me but I avoided it' },
   { value: 'victim', label: 'Yes, I lost money or data to a scam' },
   { value: 'witnessed', label: 'I have seen someone close to me get scammed' },
 ] as const;
-
-// ── Digital Services (multi-select) ──────────────────────────────────────────
-
-export const DIGITAL_SERVICES = [
-  { value: 'upi', label: 'UPI / Payment Apps', hint: 'PhonePe, Google Pay, Paytm' },
-  { value: 'online-banking', label: 'Online Banking', hint: 'Net banking, mobile banking' },
-  { value: 'shopping', label: 'Online Shopping', hint: 'Amazon, Flipkart, Myntra' },
-  { value: 'social-media', label: 'Social Media', hint: 'Instagram, Facebook, WhatsApp' },
-  { value: 'messaging', label: 'Messaging Apps', hint: 'WhatsApp, Telegram' },
-  { value: 'email', label: 'Email', hint: 'Gmail, Outlook' },
-  { value: 'govt-portals', label: 'Government Portals', hint: 'Aadhaar, PAN, DigiLocker' },
-  { value: 'investments', label: 'Investment / Trading', hint: 'Stocks, mutual funds, crypto' },
-  { value: 'gaming', label: 'Online Gaming', hint: 'Mobile games, fantasy sports' },
-  { value: 'streaming', label: 'Streaming / Entertainment', hint: 'YouTube, Netflix, OTT' },
-  { value: 'none', label: 'None of these', hint: 'I use very few digital services' },
-] as const;
-
-// ── Digital Confidence ──────────────────────────────────────────────────────
-
-export const DIGITAL_CONFIDENCE_LEVELS = [
-  { value: 'very-low', label: 'Very Low', hint: 'I feel unsure using most digital services' },
-  { value: 'low', label: 'Low', hint: 'I can do basics but feel uncertain often' },
-  { value: 'moderate', label: 'Moderate', hint: 'I am comfortable with everyday tasks' },
-  { value: 'high', label: 'High', hint: 'I am confident exploring new apps and services' },
-  { value: 'very-high', label: 'Very High', hint: 'I help others with digital tasks' },
-] as const;
-
-// ── Exposure Frequency ─────────────────────────────────────────────────────
-
-export const EXPOSURE_FREQUENCIES = [
-  { value: 'never', label: 'Never', hint: 'I have never encountered a scam attempt' },
-  { value: 'rarely', label: 'Rarely', hint: 'Maybe once or twice a year' },
-  { value: 'monthly', label: 'Monthly', hint: 'A few times a month' },
-  { value: 'weekly', label: 'Weekly', hint: 'Almost every week' },
-  { value: 'daily', label: 'Daily', hint: 'Multiple times a week or daily' },
-] as const;
-
-// ── Decision Style ──────────────────────────────────────────────────────────
-
-export const DECISION_STYLE_QUESTIONS = [
-  {
-    key: 'urgency_response' as const,
-    question: 'When someone says you must act immediately or lose something important, what do you usually do?',
-    rationale: 'Helps us understand your natural response to urgency tactics — a common scam technique.',
-    options: [
-      { value: 'act-fast' as const, label: 'Act quickly to avoid losing out', hint: 'I prioritize speed' },
-      { value: 'verify-first' as const, label: 'Pause and verify before acting', hint: 'I check first' },
-      { value: 'ask-someone' as const, label: 'Ask someone I trust for advice', hint: 'I seek a second opinion' },
-      { value: 'ignore' as const, label: 'Ignore it — it is probably not urgent', hint: 'I dismiss urgency claims' },
-    ],
-  },
-  {
-    key: 'authority_response' as const,
-    question: 'If someone claims to be from the government, police, or your bank, how do you usually respond?',
-    rationale: 'Helps us understand how authority claims affect your decision-making.',
-    options: [
-      { value: 'act-fast' as const, label: 'Follow their instructions', hint: 'I trust authority figures' },
-      { value: 'verify-first' as const, label: 'Ask for proof and verify independently', hint: 'I confirm identity first' },
-      { value: 'ask-someone' as const, label: 'Consult family or friends first', hint: 'I seek advice' },
-      { value: 'ignore' as const, label: 'Be suspicious and end the conversation', hint: 'I distrust unsolicited contact' },
-    ],
-  },
-  {
-    key: 'unexpected_response' as const,
-    question: 'When you receive an unexpected message about money, a package, or a prize, what is your first instinct?',
-    rationale: 'Helps us understand your baseline trust for unexpected digital communications.',
-    options: [
-      { value: 'act-fast' as const, label: 'Check it out — it might be real', hint: 'I explore opportunities' },
-      { value: 'verify-first' as const, label: 'Research before clicking or responding', hint: 'I investigate first' },
-      { value: 'ask-someone' as const, label: 'Ask family or friends if it is legit', hint: 'I get a second opinion' },
-      { value: 'ignore' as const, label: 'Delete or ignore it', hint: 'I dismiss unexpected messages' },
-    ],
-  },
-];
-
-// ── Onboarding Step Configuration ────────────────────────────────────────────
 
 // ── Chart Colors ───────────────────────────────────────────────────────────
 

@@ -34,10 +34,6 @@ import type {
   Occupation,
   DigitalHabitLevel,
   ScamExperience,
-  DigitalService,
-  DigitalConfidence,
-  ExposureFrequency,
-  DecisionStyle,
 } from '@/types';
 import { ASSESSMENT_CONFIG } from '@/constants';
 
@@ -46,10 +42,6 @@ export interface AdaptiveProfile {
   occupation: Occupation;
   digitalHabitLevel: DigitalHabitLevel;
   scamExperience: ScamExperience;
-  digitalServices?: DigitalService[];
-  digitalConfidence?: DigitalConfidence | null;
-  exposureFrequency?: ExposureFrequency | null;
-  decisionStyle?: Partial<DecisionStyle>;
 }
 
 export interface ScenarioSelectionResult {
@@ -105,60 +97,6 @@ export function getAdaptiveCategories(profile: AdaptiveProfile): ScenarioCategor
     categories.push('phishing', 'investment');
   } else if (profile.digitalHabitLevel === 'low') {
     categories.push('recovery', 'reporting');
-  }
-
-  // Digital services-based prioritization
-  if (profile.digitalServices && profile.digitalServices.length > 0) {
-    const services = profile.digitalServices;
-    if (services.includes('upi') || services.includes('online-banking')) {
-      categories.push('phishing', 'urgency');
-    }
-    if (services.includes('social-media') || services.includes('messaging')) {
-      categories.push('social', 'impersonation');
-    }
-    if (services.includes('investments')) {
-      categories.push('investment');
-    }
-    if (services.includes('govt-portals')) {
-      categories.push('authority');
-    }
-  }
-
-  // Digital confidence-based prioritization
-  if (profile.digitalConfidence) {
-    const conf = profile.digitalConfidence;
-    if (conf === 'very-low' || conf === 'low') {
-      categories.push('recovery', 'reporting');
-    } else if (conf === 'very-high') {
-      categories.push('phishing', 'investment');
-    }
-  }
-
-  // Exposure frequency-based prioritization
-  if (profile.exposureFrequency) {
-    const freq = profile.exposureFrequency;
-    if (freq === 'daily' || freq === 'weekly') {
-      categories.push('phishing', 'social');
-    } else if (freq === 'never' || freq === 'rarely') {
-      categories.push('reporting', 'recovery');
-    }
-  }
-
-  // Decision style-based prioritization
-  if (profile.decisionStyle) {
-    const ds = profile.decisionStyle;
-    if (ds.urgency_response === 'act-fast') {
-      categories.push('urgency');
-    }
-    if (ds.authority_response === 'act-fast') {
-      categories.push('authority');
-    }
-    if (ds.unexpected_response === 'act-fast') {
-      categories.push('phishing', 'investment');
-    }
-    if (ds.urgency_response === 'verify-first' || ds.authority_response === 'verify-first') {
-      categories.push('reporting');
-    }
   }
 
   // Scam experience-based prioritization

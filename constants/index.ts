@@ -165,7 +165,6 @@ export const ROUTES = {
   RESULTS: '/assessment/results',
   DASHBOARD: '/dashboard',
   ADMIN: '/admin',
-  PROFILE: '/profile',
   PRIVACY: '/privacy',
   ACCESSIBILITY: '/accessibility',
 } as const;

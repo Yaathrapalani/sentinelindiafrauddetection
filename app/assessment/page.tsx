@@ -43,7 +43,8 @@ export default function AssessmentPage() {
     selectOption,
     setConfidence,
     markVoiceUsed,
-    submitResponse: handleSubmitResponse,
+    buildResponse,
+    commitResponse,
     startScenario,
   } = useAssessmentState();
 
@@ -55,7 +56,7 @@ export default function AssessmentPage() {
   useEffect(() => {
     if (phase === 'intro' && !hasNarratedIntro.current) {
       hasNarratedIntro.current = true;
-      // Greeting + introduction
+      // Greeting + introduction (speech gated by enable + interaction in provider)
       const timer1 = setTimeout(() => {
         sia.narrateGreeting();
       }, 800);
@@ -73,6 +74,11 @@ export default function AssessmentPage() {
       };
     }
   }, [phase, sia]);
+
+  // Cancel overlapping speech when phase changes
+  useEffect(() => {
+    sia.resetToIdle();
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps -- intentional: cancel only on phase change
 
   // ── Narration: Profile phase ─────────────────────────────────────────────
   useEffect(() => {
@@ -138,14 +144,15 @@ export default function AssessmentPage() {
         setError(scenarioError || 'Failed to load scenarios');
         return;
       }
-      setScenarios(scenarioData);
-
       const selection = buildAssessment(scenarioData, {
         ageBracket: data.ageBracket,
         occupation: data.occupation,
         digitalHabitLevel: data.digitalHabitLevel,
         scamExperience: data.scamExperience,
+        digitalServices: data.digitalServices,
+        digitalConfidence: data.digitalConfidence,
       });
+      setScenarios(selection.allScenarios);
 
       const { data: assessment, error: assessmentError } = await createAssessment(
         participantData.id,
@@ -177,7 +184,7 @@ export default function AssessmentPage() {
     // Acknowledge the answer
     sia.narrateAcknowledgement();
 
-    const response = handleSubmitResponse(
+    const response = buildResponse(
       scenario,
       option.id,
       option.responseType,
@@ -194,16 +201,13 @@ export default function AssessmentPage() {
     }, option.metricImpacts);
 
     if (submitError) {
-      console.error('Failed to submit response:', submitError);
+      setError(submitError);
+      return;
     }
 
-    // Progress narration
+    setError(null);
+
     const isLast = currentScenarioIndex >= scenarios.length - 1;
-    if (!isLast) {
-      setTimeout(() => {
-        sia.narrateProgress(currentScenarioIndex + 1, scenarios.length);
-      }, 2000);
-    }
 
     if (isLast) {
       setPhase('loading');
@@ -220,9 +224,27 @@ export default function AssessmentPage() {
         return;
       }
 
+      commitResponse(response);
       router.push(`${ROUTES.RESULTS}?assessment=${assessmentId}&participant=${participant.id}`);
+      return;
     }
-  }, [selectedOptionId, assessmentId, participant, scenarios, currentScenarioIndex, responses, handleSubmitResponse, router, sia]);
+
+    commitResponse(response);
+    setTimeout(() => {
+      sia.narrateProgress(currentScenarioIndex + 1, scenarios.length);
+    }, 2000);
+  }, [
+    selectedOptionId,
+    assessmentId,
+    participant,
+    scenarios,
+    currentScenarioIndex,
+    responses,
+    buildResponse,
+    commitResponse,
+    router,
+    sia,
+  ]);
 
   if (phase === 'intro') {
     return (
@@ -328,6 +350,12 @@ export default function AssessmentPage() {
   return (
     <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-2xl">
+        {error && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4" />
+            {error}
+          </div>
+        )}
         <div className="mb-6">
           <AssessmentProgress
             current={currentScenarioIndex}

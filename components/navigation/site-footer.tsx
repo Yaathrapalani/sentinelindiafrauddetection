@@ -21,7 +21,7 @@ export function SiteFooter() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           <div className="md:col-span-2">
             <Link href={ROUTES.HOME} className="flex items-center gap-2 font-semibold text-primary">
-              <Shield className="h-5 w-5 text-accent" />
+              <Shield className="h-5 w-5 text-accent" aria-hidden="true" />
               <span className="text-base tracking-tight">Sentinel India</span>
             </Link>
             <p className="mt-3 max-w-sm text-sm text-muted-foreground">
@@ -54,7 +54,7 @@ export function SiteFooter() {
             &copy; {new Date().getFullYear()} Sentinel India. Research data collected anonymously.
           </p>
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            Built with <Heart className="h-3 w-3 text-destructive" /> for a safer digital India
+            Built with <Heart className="h-3 w-3 text-destructive" aria-hidden="true" /> for a safer digital India
           </p>
         </div>
       </div>

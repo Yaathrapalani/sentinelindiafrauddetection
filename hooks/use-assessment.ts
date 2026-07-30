@@ -47,7 +47,8 @@ export function useAssessmentState() {
     setState((prev) => ({ ...prev, usedVoice: true }));
   }, []);
 
-  const submitResponse = useCallback(
+  /** Build a response without advancing — call commitResponse after successful persist. */
+  const buildResponse = useCallback(
     (
       scenario: Scenario,
       optionId: string,
@@ -56,7 +57,7 @@ export function useAssessmentState() {
     ): ScenarioResponse => {
       const timeSpentMs = Date.now() - scenarioStartTime.current;
 
-      const response: ScenarioResponse = {
+      return {
         scenarioId: scenario.id,
         optionId,
         responseType,
@@ -66,16 +67,30 @@ export function useAssessmentState() {
         metricImpacts,
         answeredAt: new Date().toISOString(),
       };
-
-      setState((prev) => ({
-        ...prev,
-        responses: [...prev.responses, response],
-        currentScenarioIndex: prev.currentScenarioIndex + 1,
-      }));
-
-      return response;
     },
     [state.confidenceLevel, state.usedVoice]
+  );
+
+  const commitResponse = useCallback((response: ScenarioResponse) => {
+    setState((prev) => ({
+      ...prev,
+      responses: [...prev.responses, response],
+      currentScenarioIndex: prev.currentScenarioIndex + 1,
+    }));
+  }, []);
+
+  const submitResponse = useCallback(
+    (
+      scenario: Scenario,
+      optionId: string,
+      responseType: ScenarioResponse['responseType'],
+      metricImpacts: Record<string, number>
+    ): ScenarioResponse => {
+      const response = buildResponse(scenario, optionId, responseType, metricImpacts);
+      commitResponse(response);
+      return response;
+    },
+    [buildResponse, commitResponse]
   );
 
   const reset = useCallback(() => {
@@ -95,6 +110,8 @@ export function useAssessmentState() {
     selectOption,
     setConfidence,
     markVoiceUsed,
+    buildResponse,
+    commitResponse,
     submitResponse,
     reset,
   };

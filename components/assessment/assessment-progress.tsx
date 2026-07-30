@@ -21,6 +21,7 @@ export function AssessmentProgress({ current, total }: AssessmentProgressProps) 
       <div
         className="h-2 w-full overflow-hidden rounded-full bg-secondary"
         role="progressbar"
+        aria-label="Assessment progress"
         aria-valuenow={percentage}
         aria-valuemin={0}
         aria-valuemax={100}

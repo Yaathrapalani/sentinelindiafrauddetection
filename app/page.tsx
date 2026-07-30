@@ -56,7 +56,7 @@ const FEATURES = [
 
 const STATS = [
   { value: '10+', label: 'Behavioral Metrics' },
-  { value: '8', label: 'Assessment Scenarios' },
+  { value: '12', label: 'Assessment Scenarios' },
   { value: '5', label: 'Languages Supported' },
   { value: '100%', label: 'Anonymous' },
 ];
@@ -76,12 +76,12 @@ export default function HomePage() {
 
   useEffect(() => {
     if (hasGreeted.current) return;
+    // Only attempt greeting after enable + interaction (autoplay policy)
+    if (!sia.isEnabled || !sia.hasInteracted || sia.isMuted) return;
     hasGreeted.current = true;
     const timer = setTimeout(() => {
-      if (sia.isEnabled && !sia.isMuted) {
-        sia.narrateGreeting();
-      }
-    }, 2000);
+      sia.narrateGreeting();
+    }, 500);
     return () => clearTimeout(timer);
   }, [sia]);
 

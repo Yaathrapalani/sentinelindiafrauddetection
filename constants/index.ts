@@ -165,7 +165,6 @@ export const ROUTES = {
   RESULTS: '/assessment/results',
   DASHBOARD: '/dashboard',
   ADMIN: '/admin',
-  PROFILE: '/profile',
   PRIVACY: '/privacy',
   ACCESSIBILITY: '/accessibility',
 } as const;
@@ -211,6 +210,40 @@ export const SCAM_EXPERIENCES = [
   { value: 'attempted', label: 'Yes, someone tried to scam me but I avoided it' },
   { value: 'victim', label: 'Yes, I lost money or data to a scam' },
   { value: 'witnessed', label: 'I have seen someone close to me get scammed' },
+] as const;
+
+export const DIGITAL_SERVICES = [
+  { value: 'upi', label: 'UPI payments' },
+  { value: 'online_banking', label: 'Online / mobile banking' },
+  { value: 'shopping', label: 'Online shopping' },
+  { value: 'social_media', label: 'Social media' },
+  { value: 'food_delivery', label: 'Food delivery apps' },
+  { value: 'ride_hailing', label: 'Ride-hailing apps' },
+  { value: 'investments', label: 'Investment / trading apps' },
+  { value: 'email', label: 'Email' },
+] as const;
+
+export const DIGITAL_CONFIDENCE_LEVELS = [
+  { value: 'very-low', label: 'Very low — I need help with most digital tasks' },
+  { value: 'low', label: 'Low — I use a few apps carefully' },
+  { value: 'moderate', label: 'Moderate — I manage everyday digital tasks myself' },
+  { value: 'high', label: 'High — I am comfortable with most digital services' },
+  { value: 'very-high', label: 'Very high — I explore new apps and tools confidently' },
+] as const;
+
+export const EXPOSURE_FREQUENCIES = [
+  { value: 'never', label: 'Never noticed any' },
+  { value: 'rarely', label: 'Rarely (a few times a year)' },
+  { value: 'monthly', label: 'About monthly' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'daily', label: 'Almost daily' },
+] as const;
+
+export const DECISION_STYLE_OPTIONS = [
+  { value: 'pause', label: 'Pause and think before acting' },
+  { value: 'verify', label: 'Verify through another channel first' },
+  { value: 'act', label: 'Act quickly to resolve it' },
+  { value: 'comply', label: 'Follow the instructions given' },
 ] as const;
 
 // ── Chart Colors ───────────────────────────────────────────────────────────

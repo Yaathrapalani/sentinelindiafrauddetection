@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { Suspense, useEffect, useState, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Shield, TrendingUp, AlertTriangle, CheckCircle2, ArrowLeft, User } from 'lucide-react';
@@ -16,7 +16,18 @@ import type { BehaviorScore, Persona } from '@/types';
 import { ROUTES } from '@/constants';
 import { useSia } from '@/components/providers/sia-provider';
 
-export default function ResultsPage() {
+function ResultsLoading() {
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <div className="text-center">
+        <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-secondary border-t-accent" />
+        <p className="text-sm text-muted-foreground">Loading your results...</p>
+      </div>
+    </div>
+  );
+}
+
+function ResultsContent() {
   const params = useSearchParams();
   const router = useRouter();
   const participantId = params.get('participant');
@@ -92,14 +103,7 @@ export default function ResultsPage() {
   }, [sia]);
 
   if (loading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-secondary border-t-accent" />
-          <p className="text-sm text-muted-foreground">Loading your results...</p>
-        </div>
-      </div>
-    );
+    return <ResultsLoading />;
   }
 
   if (error || !score) {
@@ -281,5 +285,13 @@ export default function ResultsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ResultsPage() {
+  return (
+    <Suspense fallback={<ResultsLoading />}>
+      <ResultsContent />
+    </Suspense>
   );
 }

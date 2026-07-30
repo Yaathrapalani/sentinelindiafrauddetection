@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Shield, TrendingUp, AlertTriangle, CheckCircle2, ArrowLeft, User } from 'lucide-react';
@@ -14,6 +14,7 @@ import { METRIC_DEFINITIONS, POSITIVE_METRICS, NEGATIVE_METRICS } from '@/consta
 import { getRiskColor, getRiskBgColor } from '@/lib/utils/helpers';
 import type { BehaviorScore, Persona } from '@/types';
 import { ROUTES } from '@/constants';
+import { useSia } from '@/components/providers/sia-provider';
 
 export default function ResultsPage() {
   const params = useSearchParams();
@@ -23,6 +24,8 @@ export default function ResultsPage() {
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const sia = useSia();
+  const hasNarrated = useRef(false);
 
   useEffect(() => {
     if (!participantId) {
@@ -47,6 +50,46 @@ export default function ResultsPage() {
 
     load();
   }, [participantId]);
+
+  // ── Narrate results when loaded ────────────────────────────────────────
+  useEffect(() => {
+    if (!score || hasNarrated.current) return;
+    hasNarrated.current = true;
+
+    const strengths = POSITIVE_METRICS
+      .map((k) => ({ key: k, score: score.scores[k] }))
+      .sort((a, b) => b.score - a.score);
+    const vulnerabilities = NEGATIVE_METRICS
+      .filter((m) => m !== 'overallRisk')
+      .map((k) => ({ key: k, score: score.scores[k] }))
+      .sort((a, b) => b.score - a.score);
+
+    const topStrength = strengths[0] ? METRIC_DEFINITIONS[strengths[0].key].label : null;
+    const topVulnerability = vulnerabilities[0] ? METRIC_DEFINITIONS[vulnerabilities[0].key].label : null;
+
+    const timer1 = setTimeout(() => {
+      sia.narrateResults(
+        score.overallScore,
+        score.riskLevel,
+        topStrength,
+        topVulnerability
+      );
+    }, 800);
+
+    const timer2 = setTimeout(() => {
+      sia.narrateFarewell();
+    }, 15000);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, [score, sia]);
+
+  // ── Cleanup on unmount ─────────────────────────────────────────────────
+  useEffect(() => {
+    return () => sia.resetToIdle();
+  }, [sia]);
 
   if (loading) {
     return (

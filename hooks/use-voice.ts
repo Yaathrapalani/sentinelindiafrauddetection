@@ -1,17 +1,7 @@
-/**
- * Voice narration hook using the Web Speech API
- *
- * Architecture:
- * - Uses SpeechSynthesis API for text-to-speech
- * - Gracefully degrades when not supported
- * - Respects reduced motion preferences
- * - Cleans up on unmount
- * - Locale-aware voice selection
- */
-
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { getVoiceEngine, type VoiceEngineState, type VoiceSettings } from '@/lib/voice/engine';
 import type { Locale } from '@/types';
 
 interface UseVoiceOptions {
@@ -21,78 +11,131 @@ interface UseVoiceOptions {
 interface UseVoiceReturn {
   isSupported: boolean;
   isSpeaking: boolean;
-  speak: (text: string) => void;
+  isPaused: boolean;
+  isMuted: boolean;
+  voicesLoaded: boolean;
+  speak: (text: string, immediate?: boolean) => void;
+  enqueue: (text: string) => void;
   stop: () => void;
+  cancel: () => void;
+  pause: () => void;
+  resume: () => void;
+  togglePause: () => void;
+  mute: () => void;
+  unmute: () => void;
+  toggleMute: () => void;
+  replay: () => void;
+  setRate: (rate: number) => void;
+  setPitch: (pitch: number) => void;
+  setVolume: (volume: number) => void;
+  getSettings: () => VoiceSettings;
 }
-
-const LOCALE_TO_LANG: Record<Locale, string> = {
-  en: 'en-IN',
-  hi: 'hi-IN',
-  ta: 'ta-IN',
-  kn: 'kn-IN',
-  te: 'te-IN',
-};
 
 export function useVoice(options: UseVoiceOptions = {}): UseVoiceReturn {
   const { locale = 'en' } = options;
-  const [isSupported, setIsSupported] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const [state, setState] = useState<VoiceEngineState>({
+    supported: false,
+    speaking: false,
+    paused: false,
+    muted: false,
+    voicesLoaded: false,
+  });
+  const localeRef = useRef(locale);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    setIsSupported('speechSynthesis' in window);
+    localeRef.current = locale;
+    const engine = getVoiceEngine();
+    engine.setLocale(locale);
+  }, [locale]);
 
+  useEffect(() => {
+    const engine = getVoiceEngine();
+    const unsubscribe = engine.subscribe(setState);
     return () => {
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      unsubscribe();
     };
   }, []);
 
-  const speak = useCallback(
-    (text: string) => {
-      if (!isSupported || !text) return;
+  const speak = useCallback((text: string, immediate = true) => {
+    getVoiceEngine().speak(text, immediate);
+  }, []);
 
-      window.speechSynthesis.cancel();
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = LOCALE_TO_LANG[locale] || 'en-IN';
-      utterance.rate = 0.95;
-      utterance.pitch = 1.1;
-      utterance.volume = 1;
-
-      const voices = window.speechSynthesis.getVoices();
-      const targetLang = LOCALE_TO_LANG[locale] || 'en-IN';
-      const femaleVoice = voices.find(
-        (v) =>
-          v.lang === targetLang &&
-          /female|woman|samantha|google uk english female|zira|sonia|priya|kalpana/i.test(v.name)
-      ) || voices.find(
-        (v) =>
-          v.lang === targetLang &&
-          !/male|man|david|george|ravi|alex/i.test(v.name)
-      ) || voices.find((v) => v.lang === targetLang);
-
-      if (femaleVoice) {
-        utterance.voice = femaleVoice;
-      }
-
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
-
-      utteranceRef.current = utterance;
-      window.speechSynthesis.speak(utterance);
-    },
-    [isSupported, locale]
-  );
+  const enqueue = useCallback((text: string) => {
+    getVoiceEngine().enqueue(text);
+  }, []);
 
   const stop = useCallback(() => {
-    if (!isSupported) return;
-    window.speechSynthesis.cancel();
-    setIsSpeaking(false);
-  }, [isSupported]);
+    getVoiceEngine().cancel();
+  }, []);
 
-  return { isSupported, isSpeaking, speak, stop };
+  const cancel = useCallback(() => {
+    getVoiceEngine().cancel();
+  }, []);
+
+  const pause = useCallback(() => {
+    getVoiceEngine().pause();
+  }, []);
+
+  const resume = useCallback(() => {
+    getVoiceEngine().resume();
+  }, []);
+
+  const togglePause = useCallback(() => {
+    getVoiceEngine().togglePause();
+  }, []);
+
+  const mute = useCallback(() => {
+    getVoiceEngine().mute();
+  }, []);
+
+  const unmute = useCallback(() => {
+    getVoiceEngine().unmute();
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    getVoiceEngine().toggleMute();
+  }, []);
+
+  const replay = useCallback(() => {
+    getVoiceEngine().replay();
+  }, []);
+
+  const setRate = useCallback((rate: number) => {
+    getVoiceEngine().setRate(rate);
+  }, []);
+
+  const setPitch = useCallback((pitch: number) => {
+    getVoiceEngine().setPitch(pitch);
+  }, []);
+
+  const setVolume = useCallback((volume: number) => {
+    getVoiceEngine().setVolume(volume);
+  }, []);
+
+  const getSettings = useCallback(() => {
+    return getVoiceEngine().getSettings();
+  }, []);
+
+  return {
+    isSupported: state.supported,
+    isSpeaking: state.speaking,
+    isPaused: state.paused,
+    isMuted: state.muted,
+    voicesLoaded: state.voicesLoaded,
+    speak,
+    enqueue,
+    stop,
+    cancel,
+    pause,
+    resume,
+    togglePause,
+    mute,
+    unmute,
+    toggleMute,
+    replay,
+    setRate,
+    setPitch,
+    setVolume,
+    getSettings,
+  };
 }

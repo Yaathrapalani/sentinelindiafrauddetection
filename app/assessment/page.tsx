@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, ArrowRight, AlertCircle } from 'lucide-react';
@@ -10,6 +10,7 @@ import { ProfileForm } from '@/components/assessment/profile-form';
 import { ScenarioCard } from '@/components/assessment/scenario-card';
 import { AssessmentProgress } from '@/components/assessment/assessment-progress';
 import { useAssessmentState } from '@/hooks/use-assessment';
+import { useSia } from '@/components/providers/sia-provider';
 import {
   createParticipant,
   getActiveScenarios,
@@ -26,12 +27,13 @@ type Phase = 'intro' | 'profile' | 'assessment' | 'loading';
 
 export default function AssessmentPage() {
   const router = useRouter();
+  const sia = useSia();
   const [phase, setPhase] = useState<Phase>('intro');
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [participant, setParticipant] = useState<ParticipantProfile | null>(null);
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const {
     currentScenarioIndex,
@@ -45,14 +47,82 @@ export default function AssessmentPage() {
     startScenario,
   } = useAssessmentState();
 
+  const lastNarratedScenario = useRef<number>(-1);
+  const hasNarratedIntro = useRef(false);
+  const hasNarratedProfile = useRef(false);
+
+  // ── Narration: Intro phase ──────────────────────────────────────────────
   useEffect(() => {
-    if (phase === 'assessment') {
-      startScenario();
+    if (phase === 'intro' && !hasNarratedIntro.current) {
+      hasNarratedIntro.current = true;
+      // Greeting + introduction
+      const timer1 = setTimeout(() => {
+        sia.narrateGreeting();
+      }, 800);
+      const timer2 = setTimeout(() => {
+        sia.narrateIntroduction();
+      }, 5000);
+      const timer3 = setTimeout(() => {
+        sia.narrateConsent();
+      }, 12000);
+
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        clearTimeout(timer3);
+      };
     }
-  }, [phase, startScenario, currentScenarioIndex]);
+  }, [phase, sia]);
+
+  // ── Narration: Profile phase ─────────────────────────────────────────────
+  useEffect(() => {
+    if (phase === 'profile' && !hasNarratedProfile.current) {
+      hasNarratedProfile.current = true;
+      const timer = setTimeout(() => {
+        sia.narrateProfile();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [phase, sia]);
+
+  // ── Narration: Scenario introduction ─────────────────────────────────────
+  useEffect(() => {
+    if (phase === 'assessment' && scenarios.length > 0) {
+      startScenario();
+      const currentIdx = currentScenarioIndex;
+      if (lastNarratedScenario.current !== currentIdx) {
+        lastNarratedScenario.current = currentIdx;
+        const scenario = scenarios[currentIdx];
+        if (scenario) {
+          const timer = setTimeout(() => {
+            sia.narrateScenario(
+              scenario.title,
+              scenario.description,
+              scenario.voiceScript
+            );
+          }, 600);
+          return () => clearTimeout(timer);
+        }
+      }
+    }
+  }, [phase, currentScenarioIndex, scenarios, startScenario, sia]);
+
+  // ── Narration: Loading phase ─────────────────────────────────────────────
+  useEffect(() => {
+    if (phase === 'loading') {
+      sia.narrateCompletion();
+    }
+  }, [phase, sia]);
+
+  // ── Cleanup on unmount ──────────────────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      sia.resetToIdle();
+    };
+  }, [sia]);
 
   const handleProfileSubmit = async (data: ParticipantInput) => {
-    setLoading(true);
+    setSubmitting(true);
     setError(null);
 
     try {
@@ -91,7 +161,7 @@ export default function AssessmentPage() {
     } catch {
       setError('An unexpected error occurred. Please try again.');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -103,6 +173,9 @@ export default function AssessmentPage() {
 
     const option = scenario.options.find((o) => o.id === selectedOptionId);
     if (!option) return;
+
+    // Acknowledge the answer
+    sia.narrateAcknowledgement();
 
     const response = handleSubmitResponse(
       scenario,
@@ -124,7 +197,15 @@ export default function AssessmentPage() {
       console.error('Failed to submit response:', submitError);
     }
 
-    if (currentScenarioIndex >= scenarios.length - 1) {
+    // Progress narration
+    const isLast = currentScenarioIndex >= scenarios.length - 1;
+    if (!isLast) {
+      setTimeout(() => {
+        sia.narrateProgress(currentScenarioIndex + 1, scenarios.length);
+      }, 2000);
+    }
+
+    if (isLast) {
       setPhase('loading');
       const allResponses = [...responses, response];
       const { error: completeError } = await completeAssessment(
@@ -141,7 +222,7 @@ export default function AssessmentPage() {
 
       router.push(`${ROUTES.RESULTS}?assessment=${assessmentId}&participant=${participant.id}`);
     }
-  }, [selectedOptionId, assessmentId, participant, scenarios, currentScenarioIndex, responses, handleSubmitResponse, router]);
+  }, [selectedOptionId, assessmentId, participant, scenarios, currentScenarioIndex, responses, handleSubmitResponse, router, sia]);
 
   if (phase === 'intro') {
     return (
@@ -218,7 +299,7 @@ export default function AssessmentPage() {
               {error}
             </div>
           )}
-          <ProfileForm onSubmit={handleProfileSubmit} />
+          <ProfileForm onSubmit={handleProfileSubmit} submitting={submitting} />
         </div>
       </div>
     );

@@ -1,5 +1,3 @@
 [build]
 command = "npx next build"
-
-[[plugins]]
-package = "@netlify/plugin-nextjs"
+publish = ".next"

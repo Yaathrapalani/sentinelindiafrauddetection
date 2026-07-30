@@ -77,7 +77,9 @@ Open http://localhost:3000 — smoke-test home, assessment, and `/admin` login.
 4. Build settings (should match `netlify.toml`):
    - **Build command:** `npx next build`
    - **Publish directory:** `.next`
-   - Plugin: `@netlify/plugin-nextjs` (already in repo)
+   - **Base directory:** leave empty (repository root)
+
+Netlify detects Next.js and installs the current `@netlify/plugin-nextjs` adapter automatically. Do not add a pinned plugin entry in `netlify.toml` or the project dependencies.
 
 ### Environment variables
 

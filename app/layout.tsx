@@ -15,7 +15,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://sentinel-india.netlify.app'),
+  metadataBase: new URL('https://sentinel-india.vercel.app'),
   title: {
     default: 'Sentinel India — Behavioral Digital Fraud Prevention',
     template: '%s | Sentinel India',

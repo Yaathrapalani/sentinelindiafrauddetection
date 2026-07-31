@@ -38,8 +38,6 @@ interface SiaContextValue {
   isMuted: boolean;
   voicesLoaded: boolean;
   hasInteracted: boolean;
-  hasLastSpoken: boolean;
-  speechRate: number;
 
   // Actions
   enable: () => void;
@@ -50,7 +48,6 @@ interface SiaContextValue {
   pause: () => void;
   resume: () => void;
   replay: () => void;
-  setSpeechRate: (rate: number) => void;
 
   // Narration triggers
   narrateGreeting: () => void;
@@ -87,7 +84,6 @@ interface SiaProviderProps {
 
 const INTERACT_KEY = 'sia-interacted';
 const ENABLED_KEY = 'sia-enabled';
-const GREETED_KEY = 'sia-greeted';
 
 export function SiaProvider({ children }: SiaProviderProps) {
   const [state, setSiaState] = useState<SiaState>('idle');
@@ -95,8 +91,6 @@ export function SiaProvider({ children }: SiaProviderProps) {
   const [caption, setCaption] = useState('');
   const [isEnabled, setIsEnabled] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
-  const [speechRate, setSpeechRateState] = useState(0.95);
-  const [hasLastSpoken, setHasLastSpoken] = useState(false);
   const [engineState, setEngineState] = useState({
     supported: false,
     speaking: false,
@@ -108,9 +102,6 @@ export function SiaProvider({ children }: SiaProviderProps) {
   const stateRef = useRef<SiaState>('idle');
   const localeRef = useRef<Locale>('en');
   const captionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hasGreetedRef = useRef(false);
-  const isEnabledRef = useRef(false);
-  const hasInteractedRef = useRef(false);
 
   // ── Initialize from storage ────────────────────────────────────────────
 
@@ -118,14 +109,8 @@ export function SiaProvider({ children }: SiaProviderProps) {
     try {
       const interacted = sessionStorage.getItem(INTERACT_KEY) === 'true';
       const enabled = localStorage.getItem(ENABLED_KEY) === 'true';
-      const greeted = sessionStorage.getItem(GREETED_KEY) === 'true';
       setHasInteracted(interacted);
-      hasInteractedRef.current = interacted;
       setIsEnabled(enabled);
-      isEnabledRef.current = enabled;
-      hasGreetedRef.current = greeted;
-      setSpeechRateState(getVoiceEngine().getRate());
-      setHasLastSpoken(getVoiceEngine().hasLastSpoken());
     } catch {
       // storage unavailable
     }
@@ -135,22 +120,9 @@ export function SiaProvider({ children }: SiaProviderProps) {
 
   useEffect(() => {
     const engine = getVoiceEngine();
-    const unsubscribe = engine.subscribe((next) => {
-      setEngineState(next);
-      setHasLastSpoken(engine.hasLastSpoken());
-      setSpeechRateState(engine.getRate());
-    });
+    const unsubscribe = engine.subscribe(setEngineState);
     return () => unsubscribe();
   }, []);
-
-  // Keep refs in sync
-  useEffect(() => {
-    isEnabledRef.current = isEnabled;
-  }, [isEnabled]);
-
-  useEffect(() => {
-    hasInteractedRef.current = hasInteracted;
-  }, [hasInteracted]);
 
   // ── Sync visual mode with state ──────────────────────────────────────────
 
@@ -184,78 +156,34 @@ export function SiaProvider({ children }: SiaProviderProps) {
     return false;
   }, []);
 
-  const markInteracted = useCallback(() => {
-    setHasInteracted(true);
-    hasInteractedRef.current = true;
-    try {
-      sessionStorage.setItem(INTERACT_KEY, 'true');
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  const markGreeted = useCallback(() => {
-    hasGreetedRef.current = true;
-    try {
-      sessionStorage.setItem(GREETED_KEY, 'true');
-    } catch {
-      // ignore
-    }
-  }, []);
-
   // ── Narration helper ────────────────────────────────────────────────────
-  // Captions show when enabled; speech only after enable + user gesture.
 
   const narrate = useCallback(
     (text: string, targetState?: SiaState) => {
       if (targetState) {
         transitionTo(targetState);
       }
-      if (isEnabledRef.current) {
-        showCaption(text);
-      }
-      if (
-        isEnabledRef.current &&
-        hasInteractedRef.current &&
-        !engineState.muted
-      ) {
+      showCaption(text);
+      if (isEnabled && !engineState.muted) {
         getVoiceEngine().speak(text);
-        setHasLastSpoken(true);
       }
     },
-    [engineState.muted, transitionTo, showCaption]
+    [isEnabled, engineState.muted, transitionTo, showCaption]
   );
-
-  const greetOnce = useCallback(() => {
-    if (hasGreetedRef.current) return;
-    markGreeted();
-    const text = getUniqueScript('greeting');
-    transitionTo('greeting');
-    showCaption(text);
-    if (!engineState.muted) {
-      getVoiceEngine().speak(text);
-      setHasLastSpoken(true);
-    }
-  }, [engineState.muted, markGreeted, transitionTo, showCaption]);
 
   // ── Enable / Disable ────────────────────────────────────────────────────
 
   const enable = useCallback(() => {
     setIsEnabled(true);
-    isEnabledRef.current = true;
-    markInteracted();
     try {
       localStorage.setItem(ENABLED_KEY, 'true');
     } catch {
       // ignore
     }
-    // Enable is a user gesture — greet once
-    greetOnce();
-  }, [markInteracted, greetOnce]);
+  }, []);
 
   const disable = useCallback(() => {
     setIsEnabled(false);
-    isEnabledRef.current = false;
     getVoiceEngine().cancel();
     try {
       localStorage.setItem(ENABLED_KEY, 'false');
@@ -268,10 +196,13 @@ export function SiaProvider({ children }: SiaProviderProps) {
 
   useEffect(() => {
     const handleFirstInteraction = () => {
-      markInteracted();
-      // If already enabled and not yet greeted this session, greet once
-      if (isEnabledRef.current && !hasGreetedRef.current) {
-        greetOnce();
+      if (!hasInteracted) {
+        setHasInteracted(true);
+        try {
+          sessionStorage.setItem(INTERACT_KEY, 'true');
+        } catch {
+          // ignore
+        }
       }
     };
     window.addEventListener('click', handleFirstInteraction, { once: true });
@@ -280,15 +211,13 @@ export function SiaProvider({ children }: SiaProviderProps) {
       window.removeEventListener('click', handleFirstInteraction);
       window.removeEventListener('keydown', handleFirstInteraction);
     };
-  }, [markInteracted, greetOnce]);
+  }, [hasInteracted]);
 
   // ── Narration triggers ──────────────────────────────────────────────────
 
   const narrateGreeting = useCallback(() => {
-    if (hasGreetedRef.current) return;
-    markGreeted();
     narrate(getUniqueScript('greeting'), 'greeting');
-  }, [narrate, markGreeted]);
+  }, [narrate]);
 
   const narrateIntroduction = useCallback(() => {
     const intro = getUniqueScript('platformIntro');
@@ -373,11 +302,6 @@ export function SiaProvider({ children }: SiaProviderProps) {
   const resume = useCallback(() => getVoiceEngine().resume(), []);
   const replay = useCallback(() => getVoiceEngine().replay(), []);
 
-  const setSpeechRate = useCallback((rate: number) => {
-    getVoiceEngine().setRate(rate);
-    setSpeechRateState(rate);
-  }, []);
-
   const setSiaStateDirect = useCallback((s: SiaState) => {
     stateRef.current = s;
     setSiaState(s);
@@ -419,8 +343,6 @@ export function SiaProvider({ children }: SiaProviderProps) {
       isMuted: engineState.muted,
       voicesLoaded: engineState.voicesLoaded,
       hasInteracted,
-      hasLastSpoken,
-      speechRate,
       enable,
       disable,
       mute,
@@ -429,7 +351,6 @@ export function SiaProvider({ children }: SiaProviderProps) {
       pause,
       resume,
       replay,
-      setSpeechRate,
       narrateGreeting,
       narrateIntroduction,
       narrateConsent,
@@ -453,8 +374,6 @@ export function SiaProvider({ children }: SiaProviderProps) {
       isEnabled,
       engineState,
       hasInteracted,
-      hasLastSpoken,
-      speechRate,
       enable,
       disable,
       mute,
@@ -463,7 +382,6 @@ export function SiaProvider({ children }: SiaProviderProps) {
       pause,
       resume,
       replay,
-      setSpeechRate,
       narrateGreeting,
       narrateIntroduction,
       narrateConsent,

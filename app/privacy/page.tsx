@@ -94,7 +94,7 @@ export default function PrivacyPage() {
           periodically; the date below reflects the last update.
         </p>
         <p className="mt-4 text-xs text-muted-foreground/60">
-          Last updated: 28 July 2026
+          Last updated: {new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
         </p>
       </div>
     </div>

@@ -148,7 +148,7 @@ export function SiaCompanion() {
                 <ControlButton
                   onClick={handleReplay}
                   active={false}
-                  disabled={!sia.hasLastSpoken}
+                  disabled={!sia.isSpeaking && !sia.caption}
                   label="Replay"
                   icon={<RotateCw className="h-4 w-4" />}
                 />
@@ -159,8 +159,6 @@ export function SiaCompanion() {
                 onClick={handleSettings}
                 className="flex w-full items-center justify-between border-t border-border px-4 py-2.5 text-xs text-muted-foreground hover:bg-secondary/50"
                 aria-expanded={showSettings}
-                aria-controls="sia-voice-settings"
-                aria-label="Toggle voice settings"
               >
                 <span className="flex items-center gap-2">
                   <Settings2 className="h-3.5 w-3.5" />
@@ -177,7 +175,6 @@ export function SiaCompanion() {
               <AnimatePresence>
                 {showSettings && (
                   <motion.div
-                    id="sia-voice-settings"
                     initial={reducedMotion ? { height: 0 } : { height: 0, opacity: 0 }}
                     animate={reducedMotion ? { height: 'auto' } : { height: 'auto', opacity: 1 }}
                     exit={reducedMotion ? { height: 0 } : { height: 0, opacity: 0 }}
@@ -187,11 +184,12 @@ export function SiaCompanion() {
                     <div className="space-y-3 p-4">
                       <SliderControl
                         label="Rate"
-                        value={sia.speechRate}
+                        value={sia.isMuted ? 0.95 : 0.95}
                         min={0.5}
                         max={1.5}
                         step={0.05}
-                        onChange={sia.setSpeechRate}
+                        onChange={() => {}}
+                        disabled
                       />
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">Status</span>

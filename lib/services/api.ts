@@ -4,7 +4,7 @@
  * This provides a single point for validation, error handling, and data transformation.
  */
 
-import { supabase, assertSupabaseConfigured } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase/client';
 import type {
   ParticipantProfile,
   AssessmentSession,
@@ -13,58 +13,15 @@ import type {
   Scenario,
   AnalyticsSummary,
   Persona,
-  MetricKey,
-  ScenarioCategory,
-  DigitalService,
-  DigitalConfidence,
-  ExposureFrequency,
-  DecisionStyle,
 } from '@/types';
 import type { ParticipantInput, ResponseInput, FeedbackInput } from '@/lib/validation/schemas';
 import { computeBehaviorScore } from '@/lib/scoring/engine';
-import { METRIC_DEFINITIONS, POSITIVE_METRICS, NEGATIVE_METRICS } from '@/constants';
-
-function mapDecisionStyle(raw: unknown): DecisionStyle | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const obj = raw as Record<string, unknown>;
-  const urgency = (obj.urgency_response ?? obj.urgencyResponse) as DecisionStyle['urgencyResponse'] | undefined;
-  const authority = (obj.authority_response ?? obj.authorityResponse) as DecisionStyle['authorityResponse'] | undefined;
-  const unexpected = (obj.unexpected_response ?? obj.unexpectedResponse) as DecisionStyle['unexpectedResponse'] | undefined;
-  if (!urgency || !authority || !unexpected) return null;
-  return {
-    urgencyResponse: urgency,
-    authorityResponse: authority,
-    unexpectedResponse: unexpected,
-  };
-}
-
-function mapParticipant(data: Record<string, unknown>): ParticipantProfile {
-  return {
-    id: data.id as string,
-    anonymousId: data.anonymous_id as string,
-    ageBracket: data.age_bracket as ParticipantProfile['ageBracket'],
-    occupation: data.occupation as ParticipantProfile['occupation'],
-    digitalHabitLevel: data.digital_habit_level as ParticipantProfile['digitalHabitLevel'],
-    scamExperience: data.scam_experience as ParticipantProfile['scamExperience'],
-    digitalServices: (data.digital_services as DigitalService[]) || [],
-    digitalConfidence: (data.digital_confidence as DigitalConfidence) || null,
-    exposureFrequency: (data.exposure_frequency as ExposureFrequency) || null,
-    decisionStyle: mapDecisionStyle(data.decision_style),
-    locale: data.locale as ParticipantProfile['locale'],
-    consentGiven: data.consent_given as boolean,
-    createdAt: data.created_at as string,
-    completedAt: (data.completed_at as string) || null,
-  };
-}
 
 // ── Participants ────────────────────────────────────────────────────────────
 
 export async function createParticipant(
   input: ParticipantInput
 ): Promise<{ data: ParticipantProfile | null; error: string | null }> {
-  const cfg = assertSupabaseConfigured();
-  if (cfg) return { data: null, error: cfg };
-
   const anonymousId = `anon_${crypto.randomUUID()}`;
 
   const { data, error } = await supabase
@@ -75,14 +32,6 @@ export async function createParticipant(
       occupation: input.occupation,
       digital_habit_level: input.digitalHabitLevel,
       scam_experience: input.scamExperience,
-      digital_services: input.digitalServices ?? [],
-      digital_confidence: input.digitalConfidence,
-      exposure_frequency: input.exposureFrequency,
-      decision_style: {
-        urgency_response: input.decisionStyle.urgencyResponse,
-        authority_response: input.decisionStyle.authorityResponse,
-        unexpected_response: input.decisionStyle.unexpectedResponse,
-      },
       locale: input.locale,
       consent_given: input.consentGiven,
     })
@@ -92,7 +41,18 @@ export async function createParticipant(
   if (error) return { data: null, error: error.message };
 
   return {
-    data: mapParticipant(data as Record<string, unknown>),
+    data: {
+      id: data.id,
+      anonymousId: data.anonymous_id,
+      ageBracket: data.age_bracket,
+      occupation: data.occupation,
+      digitalHabitLevel: data.digital_habit_level,
+      scamExperience: data.scam_experience,
+      locale: data.locale,
+      consentGiven: data.consent_given,
+      createdAt: data.created_at,
+      completedAt: data.completed_at,
+    },
     error: null,
   };
 }
@@ -100,9 +60,6 @@ export async function createParticipant(
 export async function getParticipant(
   id: string
 ): Promise<{ data: ParticipantProfile | null; error: string | null }> {
-  const cfg = assertSupabaseConfigured();
-  if (cfg) return { data: null, error: cfg };
-
   const { data, error } = await supabase
     .from('participants')
     .select('*')
@@ -113,7 +70,18 @@ export async function getParticipant(
   if (!data) return { data: null, error: null };
 
   return {
-    data: mapParticipant(data as Record<string, unknown>),
+    data: {
+      id: data.id,
+      anonymousId: data.anonymous_id,
+      ageBracket: data.age_bracket,
+      occupation: data.occupation,
+      digitalHabitLevel: data.digital_habit_level,
+      scamExperience: data.scam_experience,
+      locale: data.locale,
+      consentGiven: data.consent_given,
+      createdAt: data.created_at,
+      completedAt: data.completed_at,
+    },
     error: null,
   };
 }
@@ -124,9 +92,6 @@ export async function getActiveScenarios(): Promise<{
   data: Scenario[] | null;
   error: string | null;
 }> {
-  const cfg = assertSupabaseConfigured();
-  if (cfg) return { data: null, error: cfg };
-
   const { data: scenarioRows, error } = await supabase
     .from('scenarios')
     .select('*, scenario_options(*)')
@@ -166,9 +131,6 @@ export async function createAssessment(
   scenarioIds: string[],
   locale: string
 ): Promise<{ data: AssessmentSession | null; error: string | null }> {
-  const cfg = assertSupabaseConfigured();
-  if (cfg) return { data: null, error: cfg };
-
   const { data, error } = await supabase
     .from('assessments')
     .insert({
@@ -201,9 +163,6 @@ export async function createAssessment(
 export async function getAssessment(
   id: string
 ): Promise<{ data: AssessmentSession | null; error: string | null }> {
-  const cfg = assertSupabaseConfigured();
-  if (cfg) return { data: null, error: cfg };
-
   const { data: assessment, error } = await supabase
     .from('assessments')
     .select('*, responses(*)')
@@ -247,9 +206,6 @@ export async function submitResponse(
   input: ResponseInput,
   metricImpacts: Record<string, number>
 ): Promise<{ error: string | null }> {
-  const cfg = assertSupabaseConfigured();
-  if (cfg) return { error: cfg };
-
   const { error } = await supabase.from('responses').insert({
     assessment_id: assessmentId,
     scenario_id: input.scenarioId,
@@ -269,9 +225,6 @@ export async function completeAssessment(
   participantId: string,
   responses: ScenarioResponse[]
 ): Promise<{ data: BehaviorScore | null; error: string | null }> {
-  const cfg = assertSupabaseConfigured();
-  if (cfg) return { data: null, error: cfg };
-
   const behaviorScore = computeBehaviorScore(participantId, assessmentId, responses);
 
   const { error: scoreError } = await supabase.from('behavior_scores').insert({
@@ -306,9 +259,6 @@ export async function completeAssessment(
 export async function getBehaviorScore(
   participantId: string
 ): Promise<{ data: BehaviorScore | null; error: string | null }> {
-  const cfg = assertSupabaseConfigured();
-  if (cfg) return { data: null, error: cfg };
-
   const { data, error } = await supabase
     .from('behavior_scores')
     .select('*')
@@ -338,9 +288,6 @@ export async function getPersonas(): Promise<{
   data: Persona[] | null;
   error: string | null;
 }> {
-  const cfg = assertSupabaseConfigured();
-  if (cfg) return { data: null, error: cfg };
-
   const { data, error } = await supabase
     .from('personas')
     .select('*')
@@ -378,26 +325,19 @@ export async function getAnalyticsSummary(): Promise<{
   data: AnalyticsSummary | null;
   error: string | null;
 }> {
-  const cfg = assertSupabaseConfigured();
-  if (cfg) return { data: null, error: cfg };
-
-  const [participantsRes, scoresRes, assessmentsRes, responsesRes] = await Promise.all([
+  const [participantsRes, scoresRes, assessmentsRes] = await Promise.all([
     supabase.from('participants').select('age_bracket, occupation, digital_habit_level, completed_at'),
     supabase.from('behavior_scores').select('scores, risk_level, overall_score'),
     supabase.from('assessments').select('status, started_at'),
-    supabase
-      .from('responses')
-      .select('response_type, scenarios!inner(category)'),
   ]);
 
-  if (participantsRes.error || scoresRes.error || assessmentsRes.error || responsesRes.error) {
+  if (participantsRes.error || scoresRes.error || assessmentsRes.error) {
     return {
       data: null,
       error:
         participantsRes.error?.message ||
         scoresRes.error?.message ||
         assessmentsRes.error?.message ||
-        responsesRes.error?.message ||
         'Unknown error',
     };
   }
@@ -405,7 +345,6 @@ export async function getAnalyticsSummary(): Promise<{
   const participants = participantsRes.data || [];
   const scores = scoresRes.data || [];
   const assessments = assessmentsRes.data || [];
-  const responseRows = responsesRes.data || [];
 
   const completedAssessments = assessments.filter(
     (a) => a.status === 'complete'
@@ -426,63 +365,14 @@ export async function getAnalyticsSummary(): Promise<{
     critical: scores.filter((s) => s.risk_level === 'critical').length,
   };
 
-  const metricAverages = {} as Record<MetricKey, number>;
+  const metricAverages: Record<string, number> = {};
   if (scores.length > 0) {
-    const allMetrics = Object.keys(scores[0].scores || {}) as MetricKey[];
+    const allMetrics = Object.keys(scores[0].scores || {});
     for (const metric of allMetrics) {
       metricAverages[metric] = Math.round(
         scores.reduce((sum, s) => sum + (s.scores[metric] || 0), 0) / scores.length
       );
     }
-  }
-
-  // Top vulnerabilities: lowest positive metrics / highest negative metrics
-  const vulnerabilityCandidates: { metric: MetricKey; averageScore: number; severity: number }[] = [];
-  for (const [metric, averageScore] of Object.entries(metricAverages) as [MetricKey, number][]) {
-    if (metric === 'overallRisk') continue;
-    const definition = METRIC_DEFINITIONS[metric];
-    if (!definition) continue;
-    if (POSITIVE_METRICS.includes(metric)) {
-      vulnerabilityCandidates.push({
-        metric,
-        averageScore,
-        severity: 100 - averageScore,
-      });
-    } else if (NEGATIVE_METRICS.includes(metric)) {
-      vulnerabilityCandidates.push({
-        metric,
-        averageScore,
-        severity: averageScore,
-      });
-    }
-  }
-  const topVulnerabilities = vulnerabilityCandidates
-    .sort((a, b) => b.severity - a.severity)
-    .slice(0, 5)
-    .map(({ metric, averageScore }) => ({ metric, averageScore }));
-
-  // Category performance: average safety score per scenario category
-  const RESPONSE_SAFETY: Record<string, number> = {
-    safe: 100,
-    cautious: 70,
-    risky: 30,
-    critical: 0,
-  };
-  const categorySums: Record<string, { total: number; count: number }> = {};
-  for (const row of responseRows) {
-    const scenario = row.scenarios as { category?: string } | { category?: string }[] | null;
-    const category = Array.isArray(scenario)
-      ? scenario[0]?.category
-      : scenario?.category;
-    if (!category) continue;
-    const safety = RESPONSE_SAFETY[row.response_type as string] ?? 50;
-    if (!categorySums[category]) categorySums[category] = { total: 0, count: 0 };
-    categorySums[category].total += safety;
-    categorySums[category].count += 1;
-  }
-  const categoryPerformance = {} as Record<ScenarioCategory, number>;
-  for (const [category, { total, count }] of Object.entries(categorySums)) {
-    categoryPerformance[category as ScenarioCategory] = Math.round(total / count);
   }
 
   const demographicBreakdown = {
@@ -507,9 +397,9 @@ export async function getAnalyticsSummary(): Promise<{
       averageOverallScore: avgScore,
       riskDistribution,
       metricAverages,
-      topVulnerabilities,
+      topVulnerabilities: [],
       demographicBreakdown,
-      categoryPerformance,
+      categoryPerformance: {} as Record<string, number>,
       lastUpdated: new Date().toISOString(),
     },
     error: null,
@@ -522,9 +412,6 @@ export async function submitFeedback(
   input: FeedbackInput,
   participantId: string | null
 ): Promise<{ error: string | null }> {
-  const cfg = assertSupabaseConfigured();
-  if (cfg) return { error: cfg };
-
   const { error } = await supabase.from('feedback').insert({
     participant_id: participantId,
     type: input.type,

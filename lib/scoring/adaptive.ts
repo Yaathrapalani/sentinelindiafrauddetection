@@ -34,8 +34,6 @@ import type {
   Occupation,
   DigitalHabitLevel,
   ScamExperience,
-  DigitalService,
-  DigitalConfidence,
 } from '@/types';
 import { ASSESSMENT_CONFIG } from '@/constants';
 
@@ -44,8 +42,6 @@ export interface AdaptiveProfile {
   occupation: Occupation;
   digitalHabitLevel: DigitalHabitLevel;
   scamExperience: ScamExperience;
-  digitalServices?: DigitalService[];
-  digitalConfidence?: DigitalConfidence;
 }
 
 export interface ScenarioSelectionResult {
@@ -110,29 +106,6 @@ export function getAdaptiveCategories(profile: AdaptiveProfile): ScenarioCategor
     categories.push('reporting');
   }
 
-  // Digital services — light additive category hints from exposure surface
-  const services = profile.digitalServices ?? [];
-  if (services.includes('upi') || services.includes('online_banking')) {
-    categories.push('phishing');
-  }
-  if (services.includes('investments')) {
-    categories.push('investment');
-  }
-  if (services.includes('social_media')) {
-    categories.push('social');
-  }
-  if (services.includes('shopping') || services.includes('food_delivery')) {
-    categories.push('impersonation');
-  }
-
-  // Low confidence → recovery / reporting focus
-  if (
-    profile.digitalConfidence === 'very-low' ||
-    profile.digitalConfidence === 'low'
-  ) {
-    categories.push('recovery', 'reporting');
-  }
-
   // Deduplicate, preserving order
   return Array.from(new Set(categories));
 }
@@ -148,7 +121,6 @@ export function selectAdaptiveScenarios(
 ): Scenario[] {
   const coreIds = new Set(coreScenarios.map((s) => s.id));
   const adaptiveCategories = getAdaptiveCategories(profile);
-  const preferredDifficulty = getAdaptiveDifficulty(profile.digitalHabitLevel);
 
   // Build pool of non-core scenarios, prioritized by adaptive categories
   const pool = allScenarios.filter((s) => !coreIds.has(s.id));
@@ -156,19 +128,11 @@ export function selectAdaptiveScenarios(
   const selected: Scenario[] = [];
   const usedIds = new Set<string>();
 
-  // Prefer scenarios near the digital-habit difficulty band
-  const byDifficultyPreference = (a: Scenario, b: Scenario) => {
-    const da = Math.abs(a.difficulty - preferredDifficulty);
-    const db = Math.abs(b.difficulty - preferredDifficulty);
-    if (da !== db) return da - db;
-    return b.difficulty - a.difficulty;
-  };
-
   // First pass: select by adaptive category priority
   for (const category of adaptiveCategories) {
     const candidates = pool
       .filter((s) => s.category === category && !usedIds.has(s.id))
-      .sort(byDifficultyPreference);
+      .sort((a, b) => b.difficulty - a.difficulty);
 
     if (candidates.length > 0 && selected.length < ASSESSMENT_CONFIG.ADAPTIVE_SCENARIO_COUNT) {
       selected.push(candidates[0]);
@@ -178,10 +142,8 @@ export function selectAdaptiveScenarios(
 
   // Second pass: fill remaining slots with any unused non-core scenarios
   if (selected.length < ASSESSMENT_CONFIG.ADAPTIVE_SCENARIO_COUNT) {
-    const remaining = pool
-      .filter((s) => !usedIds.has(s.id))
-      .sort(byDifficultyPreference);
-    for (const scenario of remaining) {
+    for (const scenario of pool) {
+      if (usedIds.has(scenario.id)) continue;
       selected.push(scenario);
       usedIds.add(scenario.id);
       if (selected.length >= ASSESSMENT_CONFIG.ADAPTIVE_SCENARIO_COUNT) break;

@@ -1,29 +1,17 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
-const PLACEHOLDER_URL = 'https://placeholder.supabase.co';
-const PLACEHOLDER_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!supabaseUrl || !supabaseServiceKey) {
+  throw new Error(
+    'Missing Supabase server environment variables. Ensure SUPABASE_SERVICE_ROLE_KEY is set.'
+  );
+}
 
-export const isSupabaseAdminConfigured = Boolean(
-  supabaseUrl &&
-    supabaseServiceKey &&
-    !supabaseUrl.includes('YOUR_PROJECT') &&
-    supabaseServiceKey !== 'your_service_role_key'
-);
-
-/**
- * Server/admin Supabase client.
- * Inert placeholders allow builds without env; callers should check configuration.
- */
-export const supabaseAdmin: SupabaseClient = createClient(
-  isSupabaseAdminConfigured ? (supabaseUrl as string) : PLACEHOLDER_URL,
-  isSupabaseAdminConfigured ? (supabaseServiceKey as string) : PLACEHOLDER_KEY,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  }
-);
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+  },
+});

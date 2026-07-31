@@ -4,6 +4,9 @@ import { Inter } from 'next/font/google';
 import { SiteHeader } from '@/components/navigation/site-header';
 import { SiteFooter } from '@/components/navigation/site-footer';
 import { QueryProvider } from '@/components/providers/query-provider';
+import { SiaProvider } from '@/components/providers/sia-provider';
+import { SiaCompanion } from '@/components/sia/sia-companion';
+import { SiaVoicePrompt } from '@/components/sia/sia-voice-prompt';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -63,13 +66,17 @@ export default function RootLayout({
           Skip to main content
         </a>
         <QueryProvider>
-          <div className="flex min-h-screen flex-col">
-            <SiteHeader />
-            <main id="main-content" className="flex-1">
-              {children}
-            </main>
-            <SiteFooter />
-          </div>
+          <SiaProvider>
+            <div className="flex min-h-screen flex-col">
+              <SiteHeader />
+              <main id="main-content" className="flex-1">
+                {children}
+              </main>
+              <SiteFooter />
+            </div>
+            <SiaCompanion />
+            <SiaVoicePrompt />
+          </SiaProvider>
         </QueryProvider>
       </body>
     </html>

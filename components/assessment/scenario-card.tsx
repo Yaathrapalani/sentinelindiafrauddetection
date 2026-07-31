@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Volume2, VolumeX, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useVoice } from '@/hooks/use-voice';
+import { useSia } from '@/components/providers/sia-provider';
 import { useEffect, useState } from 'react';
 
 interface ScenarioCardProps {
@@ -59,7 +59,7 @@ export function ScenarioCard({
   onSubmit,
   onVoiceUsed,
 }: ScenarioCardProps) {
-  const { isSupported, isSpeaking, speak, stop } = useVoice();
+  const sia = useSia();
   const [timeLeft, setTimeLeft] = useState(120);
 
   useEffect(() => {
@@ -70,10 +70,10 @@ export function ScenarioCard({
   }, []);
 
   const handleVoice = () => {
-    if (isSpeaking) {
-      stop();
+    if (sia.isSpeaking) {
+      sia.pause();
     } else if (scenario.voiceScript) {
-      speak(scenario.voiceScript);
+      sia.narrateCustom(scenario.voiceScript);
       onVoiceUsed();
     }
   };
@@ -90,20 +90,20 @@ export function ScenarioCard({
             <Badge variant="outline">{CHANNEL_ICONS[scenario.channel] || scenario.channel}</Badge>
           </div>
           <div className="flex items-center gap-2">
-            {isSupported && scenario.voiceScript && (
+            {sia.isSupported && scenario.voiceScript && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleVoice}
-                aria-label={isSpeaking ? 'Stop voice narration' : 'Play voice narration'}
+                aria-label={sia.isSpeaking ? 'Pause voice narration' : 'Play voice narration'}
               >
-                {isSpeaking ? (
+                {sia.isSpeaking ? (
                   <VolumeX className="h-4 w-4" />
                 ) : (
                   <Volume2 className="h-4 w-4" />
                 )}
                 <span className="ml-1.5 text-xs">
-                  {isSpeaking ? 'Stop' : 'Listen'}
+                  {sia.isSpeaking ? 'Pause' : 'Listen'}
                 </span>
               </Button>
             )}

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   Shield,
@@ -18,6 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ROUTES } from '@/constants';
+import { useSia } from '@/components/providers/sia-provider';
 
 const FEATURES = [
   {
@@ -69,6 +71,20 @@ const SCAM_TYPES = [
 ];
 
 export default function HomePage() {
+  const sia = useSia();
+  const hasGreeted = useRef(false);
+
+  useEffect(() => {
+    if (hasGreeted.current) return;
+    hasGreeted.current = true;
+    const timer = setTimeout(() => {
+      if (sia.isEnabled && !sia.isMuted) {
+        sia.narrateGreeting();
+      }
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [sia]);
+
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
